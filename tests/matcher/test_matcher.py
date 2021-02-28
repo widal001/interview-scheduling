@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from utils.matcher import Matcher
 from tests.matcher.matcher_data import PREFS, INTERVIEWS
 
@@ -22,7 +24,31 @@ class TestInit:
 
 class TestAssingInterviews:
     def test_complete(self):
-        assert 1
+
+        # inputs
+        c_prefs = PREFS["complete"]["candidates"]
+        p_prefs = PREFS["complete"]["positions"]
+        c_matches = INTERVIEWS["complete"]["candidates"]
+        p_matches = INTERVIEWS["complete"]["positions"]
+
+        # execution
+        m = Matcher(c_prefs, p_prefs)
+        m.assign_interviews()
+
+        print("EXPECTED")
+        pprint(c_matches)
+        print("ACTUAL")
+        pprint(m.c_matches)
+        print("EXPECTED")
+        pprint(p_matches)
+        print("ACTUAL")
+        pprint(m.p_matches)
+
+        # validation
+        assert m.c_matches == c_matches
+        assert m.p_matches == p_matches
+        assert m.c_remaining == []
+        assert m.p_remaining == []
 
     def test_unmatched_candidate(self):
         assert 1

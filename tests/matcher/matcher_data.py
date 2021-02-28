@@ -39,12 +39,12 @@ PREFS = {
 
 INTERVIEWS = {
     "complete": {
-        "candidate matches": {
+        "candidates": {
             "Alice": ["Position 1", "Position 2", "Position 3"],
             "Bob": ["Position 2", "Position 3", "Position 1"],
             "Charlie": ["Position 3", "Position 1", "Position 2"],
         },
-        "position matches": {
+        "positions": {
             "Position 1": ["Alice", "Charlie", "Bob"],
             "Position 2": ["Bob", "Alice", "Charlie"],
             "Position 3": ["Charlie", "Bob", "Alice"],
