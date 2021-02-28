@@ -1,6 +1,6 @@
 PREFS = {
     "complete": {
-        "candidate": {
+        "candidates": {
             "Alice": {"Position 1": 1, "Position 2": 2, "Position 3": 3},
             "Bob": {"Position 1": 3, "Position 2": 1, "Position 3": 2},
             "Charlie": {"Position 1": 2, "Position 2": 3, "Position 3": 1},
@@ -12,7 +12,7 @@ PREFS = {
         },
     },
     "popular candidate": {
-        "candidate": {
+        "candidates": {
             "Alice": {"Position 1": 1, "Position 2": 2, "Position 3": 3},
             "Bob": {"Position 1": 3, "Position 2": 1, "Position 3": 2},
             "Charlie": {"Position 1": 2, "Position 2": 3, "Position 3": 1},
@@ -24,7 +24,7 @@ PREFS = {
         },
     },
     "popular position": {
-        "candidate": {
+        "candidates": {
             "Alice": {"Position 1": 1, "Position 2": 2, "Position 3": 3},
             "Bob": {"Position 1": 1, "Position 2": 2, "Position 3": 3},
             "Charlie": {"Position 1": 1, "Position 2": 3, "Position 3": 2},
