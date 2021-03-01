@@ -17,10 +17,10 @@ class TestInit:
         m = Matcher(c_prefs, p_prefs)
 
         # validation
-        m.c_prefs = c_prefs
-        m.p_prefs = p_prefs
-        m.candidates = candidates
-        m.positions = positions
+        assert m.c_prefs == c_prefs
+        assert m.p_prefs == p_prefs
+        assert m.candidates == candidates
+        assert m.positions == positions
 
 
 class TestAssingInterviews:
