@@ -50,7 +50,7 @@ If you don't have Python version 3.6 or later installed on your computer, consid
 ### Installation
 
 1. Fork the repo -- for more information about forking, reference [this guide](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/working-with-forks)
-1. Clone your forked repo on your local machine`git clone https://github.com/YOUR_USERNAME/BOE_tabulator.git`
+1. Clone your forked repo on your local machine`git clone https://github.com/YOUR_USERNAME/interview-scheduling.git`
 1. Create a new virtual environment in your project directory `python -m venv env`
 1. Activate your virtual environment `source env/bin/activate`
 1. Install necessary python packages`pip install -r requirements.txt`
@@ -70,3 +70,5 @@ If you don't have Python version 3.6 or later installed on your computer, consid
 Additional details on usage are in progress.
 
 ## Contributing
+
+Additional details on contributing are in progress
