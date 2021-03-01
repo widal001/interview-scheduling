@@ -24,16 +24,13 @@ class Scheduler:
         # creating lists for time nodes and edges
         c_times = [(c, t) for c, times in c_availability for t in times]
         p_times = [(p, t) for p, times in p_availability for t in times]
-        s_edges = [("s", p) for p in p_times]
-        t_edges = [(i, "t") for i in interviews]
-        time_edges = [
-            (p, c)
-            for p in p_times
-            for c in c_times
-            if (p[0], c[0]) in interviews and p[1] == c[1]
-        ]
-        interview_edges = [(t, i) for i in interviews for t in c_times if i[1] == t[0]]
-        pprint(interview_edges)
+        c_interviews = [("c", i) for i in interviews]
+        p_interviews = [(i, "p") for i in interviews]
+        s_edges = [("s", c) for c in c_times]
+        c_edges = [(c, i) for i in c_interviews for c in c_times if i[1][1] == c[0]]
+        p_edges = [(i, p) for i in p_interviews for p in p_times if i[0][0] == p[0]]
+        i_edges = [(("c", i), (i, "p")) for i in interviews]
+        t_edges = [(p, "t") for p in p_times]
 
         # initialize the graph
         G = nx.DiGraph()
@@ -41,14 +38,16 @@ class Scheduler:
         # add nodes
         G.add_nodes_from(c_times)  # candidate availability partition
         G.add_nodes_from(p_times)  # partner availability partition
-        G.add_nodes_from(interviews)  # interviews partition
+        G.add_nodes_from(c_interviews)  # interviews partition
+        G.add_nodes_from(p_interviews)
         G.add_nodes_from(["s", "t"])  # source and sink nodes
 
         # add edges
-        G.add_edges_from(s_edges)  # edges from source to partner availability
-        G.add_edges_from(t_edges)  # edges from interviews to sink
-        G.add_edges_from(time_edges)  # edges between mutually availabile times
-        G.add_edges_from(interview_edges)  # edges from candidates to interviews
+        G.add_edges_from(s_edges)  # ensures no candidates are double booked
+        G.add_edges_from(t_edges)  # ensures no partners are double booked
+        G.add_edges_from(c_edges)  # connects c_availability to interviews
+        G.add_edges_from(p_edges)  # connects interviews to p_availability
+        G.add_edges_from(i_edges)  # ensures no interview is scheduled twice
 
         # assign graph capacity
         nx.set_edge_attributes(G, 1, "capacity")
@@ -56,14 +55,10 @@ class Scheduler:
         # run the flow and retrieve the matches
         flow_val, flow_dict = nx.maximum_flow(G, "s", "t")
         scheduled = {}
-        print("FULL DICT")
-        pprint(flow_dict)
-        for interview in interviews:
-            # print(interview)
-            # print(flow_dict[interview])
-            for time, flow in flow_dict[interview].items():
+        for i in interviews:
+            for time, flow in flow_dict[(i, "p")].items():
                 if flow > 0:
-                    scheduled[interview] = time[1]
+                    scheduled[i] = time[1]
         unscheduled = [i for i in interviews if i not in scheduled.keys()]
 
         self.G = G

@@ -32,7 +32,7 @@ class TestInit:
         assert s.p_availability == p_availability
         assert s.candidates == candidates
         assert s.positions == positions
-        assert s.interviews == interviews
+        assert set(s.interviews) == set(interviews)
 
 
 class TestScheduleInterviews:
@@ -50,8 +50,7 @@ class TestScheduleInterviews:
         print("SCHEDULED")
         pprint(s.scheduled)
         print("GRAPH")
-        pprint(s.G)
 
         # validation
         assert s.scheduled == schedule
-        assert 0
+        assert s.unscheduled == []
