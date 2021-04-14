@@ -27,10 +27,33 @@ class Scheduler:
         c_interviews = [("c", i) for i in interviews]
         p_interviews = [(i, "p") for i in interviews]
         s_edges = [("s", c) for c in c_times]
-        c_edges = [(c, i) for i in c_interviews for c in c_times if i[1][1] == c[0]]
-        p_edges = [(i, p) for i in p_interviews for p in p_times if i[0][0] == p[0]]
         i_edges = [(("c", i), (i, "p")) for i in interviews]
         t_edges = [(p, "t") for p in p_times]
+
+        # connects a candidate's time slots to their interviews
+        # based on mutual availability with the interviewing partner
+        c_edges = []
+        for i in c_interviews:
+            candidate = i[1][1]
+            p = i[1][0]
+            for c in c_times:
+                time = c[1]
+                if candidate == c[0] and time in self.p_availability[p]:
+                    c_edges.append((c, i))
+
+        # connects a partner's time slots to their interviews
+        # based on mutual availability with the interviewing candidate
+        p_edges = []
+        for i in p_interviews:
+            position = i[0][0]
+            c = i[0][1]
+            for p in p_times:
+                time = p[1]
+                if position == p[0] and time in self.c_availability[c]:
+                    p_edges.append((i, p))
+
+        pprint(c_edges)
+        pprint(p_edges)
 
         # initialize the graph
         G = nx.DiGraph()

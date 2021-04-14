@@ -18,13 +18,24 @@ AVAIAILABILITY = {
 }
 
 SCHEDULE = {
-    ("Position 1", "Alice"): "3pm",
-    ("Position 1", "Bob"): "9am",
-    ("Position 1", "Charlie"): "12pm",
-    ("Position 2", "Alice"): "12pm",
-    ("Position 2", "Bob"): "3pm",
-    ("Position 2", "Charlie"): "9am",
-    ("Position 3", "Alice"): "9am",
-    ("Position 3", "Bob"): "12pm",
-    ("Position 3", "Charlie"): "3pm",
+    "complete": {
+        ("Position 1", "Alice"): "3pm",
+        ("Position 1", "Bob"): "9am",
+        ("Position 1", "Charlie"): "12pm",
+        ("Position 2", "Alice"): "12pm",
+        ("Position 2", "Bob"): "3pm",
+        ("Position 2", "Charlie"): "9am",
+        ("Position 3", "Alice"): "9am",
+        ("Position 3", "Bob"): "12pm",
+        ("Position 3", "Charlie"): "3pm",
+    },
+    "incomplete": {
+        ("Position 1", "Bob"): "12pm",
+        ("Position 1", "Charlie"): "9am",
+        ("Position 2", "Alice"): "9am",
+        ("Position 2", "Bob"): "3pm",
+        ("Position 2", "Charlie"): "12pm",
+        ("Position 3", "Bob"): "9am",
+        ("Position 3", "Charlie"): "12pm",
+    },
 }
