@@ -31,7 +31,10 @@ class Matcher:
         # populate requests based on candidate preference
         for c in candidates:
             prefs = self.c_prefs[c]
-            requests[c] = {"active": sorted(prefs, key=prefs.get), "on hold": []}
+            requests[c] = {
+                "active": sorted(prefs, key=prefs.get),
+                "on hold": [],
+            }
 
         while candidates:
             # gets the next candidate from the pool
