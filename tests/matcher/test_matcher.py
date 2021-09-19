@@ -1,12 +1,22 @@
 from pprint import pprint
 from copy import deepcopy
 
-from utils.matcher import Matcher
+from cohortify.matcher import Matcher
 from tests.matcher.matcher_data import PREFS, INTERVIEWS
 
 
 class TestInit:
-    def test_complete(self):
+    """Tests Matcher.init()"""
+
+    def test_init(self):
+        """Tests that Matcher instantiates correctly
+
+        Validates following conditions:
+        - Matcher.c_prefs matches the input c_prefs
+        - Matcher.p_prefs matches the input p_prefs
+        - Matcher.candidates contains all of the candidates
+        - Matcher.positions contains all of the positions
+        """
         # setup
         c_prefs = PREFS["complete"]["candidates"]
         p_prefs = PREFS["complete"]["positions"]
@@ -24,8 +34,12 @@ class TestInit:
 
 
 class TestAssingInterviews:
-    def test_complete(self):
+    """Tests Matcher.assign_interviews()"""
 
+    def test_complete(self):
+        """Tests that Matcher.assign_interviews() matches all positions and
+        candidates to interviews
+        """
         # inputs
         c_prefs = PREFS["complete"]["candidates"]
         p_prefs = PREFS["complete"]["positions"]
@@ -52,6 +66,9 @@ class TestAssingInterviews:
         assert m.p_remaining == []
 
     def test_unmatched_candidate(self):
+        """Tests that the correct set of candidates are listed as unmatched if
+        they can't be matched to interviews based on their preferences
+        """
         # inputs
         c_prefs = deepcopy(PREFS["complete"]["candidates"])
         p_prefs = deepcopy(PREFS["complete"]["positions"])
@@ -80,6 +97,9 @@ class TestAssingInterviews:
         assert m.p_remaining == []
 
     def test_unmatched_position(self):
+        """Tests that the correct set of positions are listed as unmatched if
+        they can't be matched to interviews based on their preferences
+        """
         # inputs
         c_prefs = deepcopy(PREFS["complete"]["candidates"])
         p_prefs = deepcopy(PREFS["complete"]["positions"])
@@ -108,6 +128,10 @@ class TestAssingInterviews:
         assert m.p_remaining == ["Position 4"]
 
     def test_match_swapping(self):
+        """Tests that the correct interviews are assigned when a position
+        receives an interview from a more preferred candidate after it has
+        already reached its max number of interviews.
+        """
         # inputs
         c_prefs = deepcopy(PREFS["match swapping"]["candidates"])
         p_prefs = deepcopy(PREFS["match swapping"]["positions"])

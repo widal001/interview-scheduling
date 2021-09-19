@@ -79,5 +79,10 @@ unauthorized_licenses = []
 disable = [
   "C0114",  # Disables module docstrings
   "R0201",  # Disables method could have been a function
-  "R0903"  # Disables too few public methods
+  "R0903",  # Disables too few public methods
+  "C0103",  # Disables invalid name
+  "W0511",  # Disables fixme warning
+  # TODO: Fix the errors below
+  "R0914",  # Disables too many local variables
+  "R0902",  # Disables too many instance attributes
 ]

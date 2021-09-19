@@ -1,24 +1,59 @@
-from pprint import pprint
+from __future__ import annotations  # prevents NameErrors for typing
+from typing import Dict
+
+Preferences = Dict[str, Dict[str, int]]
 
 
 class Matcher:
-    def __init__(self, c_prefs, p_prefs):
+    """Matches Candidates and Positions for interviews"""
+
+    def __init__(self, c_prefs: Preferences, p_prefs: Preferences):
         """Initializes the Matcher class for interview or placement matching
 
-        Args:
-            c_prefs: c_prefs[c][p] is candidate c's ranking of position p
+        Parameters
+        ----------
+        c_prefs:
+            Dictionary of candidate's rankings of positions with format:
+            {"CandidateA": {"PositionA": 1, "PositionB": 2}}
             p_prefs: p_prefs[p][c] is position p's ranking of candidate c
-        Returns:
-            candidates: List of candidates who submitted preferences
-            positions: List of positions who submitted preferences
         """
         self.c_prefs = c_prefs
         self.p_prefs = p_prefs
         self.candidates = list(c_prefs.keys())
         self.positions = list(p_prefs.keys())
 
-    def assign_interviews(self, c_min=0, c_max=999, p_min=0, p_max=999):
+        # set by self.assign_interviews()
+        self.c_remaining: list = None
+        self.p_remaining: list = None
+        self.log: list = []
+        self.c_matches: dict = {}
+        self.p_matches: dict = {}
+        self.requests_left: dict = {}
 
+    def assign_interviews(
+        self,
+        c_min: int = 0,
+        c_max: int = 100,
+        p_min: int = 0,
+        p_max: int = 1000,
+    ) -> None:
+        """Match candidates to positions for interviews
+
+        Parameters
+        ----------
+        c_min: int, optional
+            The minimum number of interviews each candidate should receive.
+            Default is to have no minimum requirement.
+        c_max: int, optional
+            The maximum number of interviews each candidate should receive.
+            Default is a limit of 100 interviews per candidate.
+        p_min: int, optional
+            The minimum number of interviews each candidate should receive.
+            Default is to have no minimum requirement.
+        p_max: int, optional
+            The maximum number of interviews each candidate should receive.
+            Default is a limit of 1000 interviews per position.
+        """
         # create copies of
         candidates = self.candidates.copy()
         p_prefs = self.p_prefs
@@ -26,7 +61,7 @@ class Matcher:
         match_log = []  # TODO: Add log
         p_matches = {p: [] for p in self.positions}
         c_matches = {c: [] for c in self.candidates}
-        round = 1
+        _round = 1
 
         # populate requests based on candidate preference
         for c in candidates:
@@ -38,7 +73,7 @@ class Matcher:
 
         while candidates:
             # gets the next candidate from the pool
-            round += 1
+            _round += 1
             c = candidates.pop(0)
             requests_left = requests[c]["active"]
 
@@ -46,7 +81,7 @@ class Matcher:
             if not requests_left:
                 continue
             # or reached the max number of interviews
-            elif len(c_matches[c]) >= c_max:
+            if len(c_matches[c]) >= c_max:
                 requests[c]["on hold"].extend(requests_left)
                 continue
 
@@ -61,7 +96,7 @@ class Matcher:
                 candidates.append(c)
                 continue
             # if p already has max number of interviews
-            elif len(matches) >= p_max:
+            if len(matches) >= p_max:
                 c_to_drop = c
                 # check if c preferred to any current matches
                 for i in range(len(matches)):
