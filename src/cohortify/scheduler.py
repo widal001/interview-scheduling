@@ -1,21 +1,52 @@
-from pprint import pprint
+from __future__ import annotations  # prevents NameErrors for typing
+from typing import Dict, Tuple, List
 
 import networkx as nx
 
+Interview = Tuple[str, str]
+InterviewTime = Dict[Interview, str]
+
 
 class Scheduler:
-    def __init__(self, c_availability, p_availability, interviews):
+    """Class used to schedule interviews
+
+    Parameters
+    ----------
+    c_availability: Dict[str, list]
+        A dictionary of candidates' availability to interview with the format:
+        {"CandidateA": ["Time1", "Time2", "Time3"]}
+    p_availability: Dict[str, list]
+        A dictionary of partners' availability to interview with the format:
+        {"PositionA": ["Time1", "Time2", "Time3"]}
+    interviews: Dict[str, list]
+        A list of interviews to schedule with the following format:
+        {"PositionA": ["CandidateA", "CandidateB", "CandidateC"]}
+    """
+
+    def __init__(
+        self,
+        c_availability: Dict[str, list],
+        p_availability: Dict[str, list],
+        interviews: List[tuple],
+    ) -> None:
+        """Inits the Interviews class"""
         self.c_availability = c_availability
         self.p_availability = p_availability
         self.candidates = list(c_availability.keys())
         self.positions = list(p_availability.keys())
-        self.interviews = []
 
+        self.interviews = []
         for p, matches in interviews.items():
             for c in matches:
                 self.interviews.append((p, c))
 
+        # set by self.schedule_interviews()
+        self.G: nx.DiGraph = None
+        self.scheduled: InterviewTime = {}
+        self.unscheduled: List[Interview]
+
     def schedule_interviews(self):
+        """Assign interviews to time slots depending on mutual availability"""
         # get variables
         c_availability = self.c_availability.items()
         p_availability = self.p_availability.items()
@@ -27,8 +58,12 @@ class Scheduler:
         c_interviews = [("c", i) for i in interviews]
         p_interviews = [(i, "p") for i in interviews]
         s_edges = [("s", c) for c in c_times]
-        c_edges = [(c, i) for i in c_interviews for c in c_times if i[1][1] == c[0]]
-        p_edges = [(i, p) for i in p_interviews for p in p_times if i[0][0] == p[0]]
+        c_edges = [
+            (c, i) for i in c_interviews for c in c_times if i[1][1] == c[0]
+        ]
+        p_edges = [
+            (i, p) for i in p_interviews for p in p_times if i[0][0] == p[0]
+        ]
         i_edges = [(("c", i), (i, "p")) for i in interviews]
         t_edges = [(p, "t") for p in p_times]
 
@@ -53,7 +88,7 @@ class Scheduler:
         nx.set_edge_attributes(G, 1, "capacity")
 
         # run the flow and retrieve the matches
-        flow_val, flow_dict = nx.maximum_flow(G, "s", "t")
+        flow_dict = nx.maximum_flow(G, "s", "t")[1]
         scheduled = {}
         for i in interviews:
             for time, flow in flow_dict[(i, "p")].items():

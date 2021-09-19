@@ -1,6 +1,6 @@
 from pprint import pprint
 
-from utils.scheduler import Scheduler
+from cohortify.scheduler import Scheduler
 from tests.scheduler.scheduler_data import (
     INTERVIEWS,
     AVAIAILABILITY,
@@ -9,7 +9,10 @@ from tests.scheduler.scheduler_data import (
 
 
 class TestInit:
+    """Tests Scheduler.__init__()"""
+
     def test_init(self):
+        """Tests that Scheduler instantiates correctly"""
         # setup
         c_availability = AVAIAILABILITY["candidates"]
         p_availability = AVAIAILABILITY["positions"]
@@ -36,8 +39,10 @@ class TestInit:
 
 
 class TestScheduleInterviews:
-    def test_complete(self):
+    """Tests Scheduler.schedule_interviews()"""
 
+    def test_complete(self):
+        """Tests that all interviews are assigned"""
         # setup
         c_availability = AVAIAILABILITY["candidates"]
         p_availability = AVAIAILABILITY["positions"]
