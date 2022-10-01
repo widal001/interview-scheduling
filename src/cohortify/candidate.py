@@ -1,12 +1,16 @@
 from __future__ import annotations
-from typing import List, Optional
+from typing import List, Optional, Dict
+
+Name = str
+Preferences = Dict[Name, List[Name]]
+Capacities = Dict[Name, int]
 
 
 class Candidate:
     def __init__(
         self,
-        name: str,
-        prefs: List[str],
+        name: Name,
+        prefs: List[Name],
         capacity: int,
     ) -> None:
         self.name = name
@@ -36,13 +40,30 @@ class Candidate:
                 offer_to_reject = current_offer
         return offer_to_reject
 
-    def copy(self) -> Candidate:
-        return Candidate(
-            name=self.name,
-            prefs=self.prefs,
-            capacity=self.capacity,
-        )
-
     @property
     def has_capacity(self) -> bool:
         return len(self.matches) < self.capacity
+
+
+class CandidateList:
+    def __init__(
+        self,
+        preferences: Preferences,
+        capacities: Capacities,
+        default_capacity: int,
+    ) -> None:
+
+        self.candidates: Dict[str, Candidate] = {}
+
+        for name, prefs in preferences:
+            capacity = capacities.get(name, default_capacity)
+            candidate = Candidate(name, prefs, capacity)
+            self.candidates[name] = candidate
+
+    def get(self, name: str) -> Candidate:
+        if name not in self.candidates:
+            raise KeyError
+        return self.candidates.get(name)
+
+    def to_list(self) -> List[Name]:
+        return list(self.candidates.keys())
