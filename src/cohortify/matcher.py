@@ -1,129 +1,151 @@
 from __future__ import annotations  # prevents NameErrors for typing
-from typing import Dict
+from typing import Dict, List, Tuple, Optional, Union
 
-Preferences = Dict[str, Dict[str, int]]
+from cohortify.candidate import Candidate, CandidateList
+
+Member = str
+Preferences = Dict[Member, List[Member]]
+Capacity = Dict[Member, int]
+Match = Tuple[Member, Member]
+
+
+class MatchResult:
+    def __init__(
+        self,
+        proposers: CandidateList,
+        recipients: CandidateList,
+        p_min: int = 0,
+        r_min: int = 0,
+    ) -> None:
+        self.proposers = proposers
+        self.recipients = recipients
+        self.p_min = p_min
+        self.r_min = r_min
+
+    @property
+    def matches(self) -> List[Match]:
+        match_list = []
+        for p_name, proposer in self.proposers.items():
+            matches = proposer.matches
+            match_list.extend([(p_name, r_name) for r_name in matches])
+        return match_list
+
+    def get_remaining(self, kind: str = "proposers") -> List[Candidate]:
+        if kind not in ["proposers", "recipients"]:
+            raise KeyError
+        if kind == "proposers":
+            candidates = self.proposers.candidates.values()
+            min_matches = self.p_min
+        else:
+            candidates = self.recipients.candidates.values()
+            min_matches = self.r_min
+        return [c for c in candidates if len(c.matches) < min_matches]
 
 
 class Matcher:
-    """Matches Candidates and Positions for interviews"""
+    """Match Proposers to Recipients using deferred acceptance algorithm"""
 
-    def __init__(self, c_prefs: Preferences, p_prefs: Preferences):
+    def __init__(
+        self,
+        proposer_prefs: Preferences,
+        recipient_prefs: Preferences,
+    ):
         """Initializes the Matcher class for interview or placement matching
 
         Parameters
         ----------
-        c_prefs:
-            Dictionary of candidate's rankings of positions with format:
-            {"CandidateA": {"PositionA": 1, "PositionB": 2}}
-            p_prefs: p_prefs[p][c] is position p's ranking of candidate c
+        proposer_prefs: Dict[Member, List[Members]]
+            Dictionary that maps a proposer to their ranked list of recipients
+        recipient_prefs: Dict[Member, List[Members]]
+            Dictionary that maps a recipient to their ranked list of proposers
         """
-        self.c_prefs = c_prefs
-        self.p_prefs = p_prefs
-        self.candidates = list(c_prefs.keys())
-        self.positions = list(p_prefs.keys())
+        self.proposer_prefs = proposer_prefs
+        self.recipient_prefs = recipient_prefs
 
-        # set by self.assign_interviews()
-        self.c_remaining: list = None
-        self.p_remaining: list = None
-        self.log: list = []
-        self.c_matches: dict = {}
-        self.p_matches: dict = {}
-        self.requests_left: dict = {}
-
-    def assign_interviews(
+    def assign_matches(
         self,
-        c_min: int = 0,
-        c_max: int = 100,
+        p_capacity: Union[int, Dict[Member, int]] = 1,
+        r_capacity: Union[int, Dict[Member, int]] = 1,
         p_min: int = 0,
-        p_max: int = 1000,
-    ) -> None:
-        """Match candidates to positions for interviews
+        r_min: int = 0,
+    ) -> MatchResult:
+        """Match Proposers to Recipients using deferred acceptance algorithm"""
 
-        Parameters
-        ----------
-        c_min: int, optional
-            The minimum number of interviews each candidate should receive.
-            Default is to have no minimum requirement.
-        c_max: int, optional
-            The maximum number of interviews each candidate should receive.
-            Default is a limit of 100 interviews per candidate.
-        p_min: int, optional
-            The minimum number of interviews each candidate should receive.
-            Default is to have no minimum requirement.
-        p_max: int, optional
-            The maximum number of interviews each candidate should receive.
-            Default is a limit of 1000 interviews per position.
-        """
-        # create copies of
-        candidates = self.candidates.copy()
-        p_prefs = self.p_prefs
-        requests = {}
-        match_log = []  # TODO: Add log
-        p_matches = {p: [] for p in self.positions}
-        c_matches = {c: [] for c in self.candidates}
-        _round = 1
+        # TODO: refactor these lines
+        if isinstance(p_capacity, int):
+            p_capacity = {p: p_capacity for p in self.proposer_prefs}
+        if isinstance(r_capacity, int):
+            r_capacity = {r: r_capacity for r in self.recipient_prefs}
 
-        # populate requests based on candidate preference
-        for c in candidates:
-            prefs = self.c_prefs[c]
-            requests[c] = {
-                "active": sorted(prefs, key=prefs.get),
-                "on hold": [],
-            }
+        recipients = CandidateList(self.recipient_prefs, r_capacity)
+        proposers = CandidateList(self.proposer_prefs, p_capacity)
+        proposers_left = proposers.to_list()
 
-        while candidates:
-            # gets the next candidate from the pool
-            _round += 1
-            c = candidates.pop(0)
-            requests_left = requests[c]["active"]
+        # start the deferred acceptance algorithm
+        offer_round = 0
+        while proposers_left:
+            offer_round += 1
 
-            # skip c if they have no more requests
-            if not requests_left:
-                continue
-            # or reached the max number of interviews
-            if len(c_matches[c]) >= c_max:
-                requests[c]["on hold"].extend(requests_left)
+            # get the next proposer with an offer to make
+            proposer = proposers.get(proposers_left.pop(0))
+            recipient = self.get_next_valid_offer(proposer, recipients)
+            if not recipient:
                 continue
 
-            # otherwise grab the next position c prefers
-            p = requests_left.pop(0)
-            pref = p_prefs[p]
-            matches = p_matches[p]
-
-            # if p didn't rank c, add them back to pool
-            if not pref.get(c):
-                print(f"{p} didn't rank {c}")
-                candidates.append(c)
-                continue
-            # if p already has max number of interviews
-            if len(matches) >= p_max:
-                c_to_drop = c
-                # check if c preferred to any current matches
-                for i in range(len(matches)):
-                    current_match = p_matches[p][i]
-                    # if c is preferred to a current match
-                    if pref[c_to_drop] < pref[current_match]:
-                        # swap places, then repeat loop
-                        c_to_keep = c_to_drop
-                        c_to_drop = current_match
-                        p_matches[p][i] = c_to_keep
-                # if c was preferred to a previous match
-                if c_to_drop != c:
-                    # move p from previous match to c's list
-                    c_matches[c_to_drop].remove(p)
-                    c_matches[c].append(p)
-                    # TODO: check if c_to_drop has requests on hold
-            # otherwise add c to p's list and vice versa
+            if recipient.has_capacity:
+                self.match(proposer, recipient)
             else:
-                p_matches[p].append(c)
-                c_matches[c].append(p)
+                # if the recipient prefers this offer to their current matches
+                # replace the lowest ranked match with the new proposer
+                rejected = recipient.compare_offers(proposer.name)
+                if proposer.name != rejected:
+                    rejected = proposers.get(rejected)
+                    self.replace_current_match(
+                        recipient=recipient,
+                        new_match=proposer,
+                        old_match=rejected,
+                    )
+                    if rejected.has_offers:
+                        proposers_left.append(rejected.name)
 
-            # add c back to pool
-            candidates.append(c)
+            # if they have capacity, add the proposer back to the pool
+            if proposer.has_capacity:
+                proposers_left.append(proposer)
 
-        self.c_remaining = [c for c, m in c_matches.items() if len(m) < c_min]
-        self.p_remaining = [p for p, m in p_matches.items() if len(m) < p_min]
-        self.log = match_log
-        self.c_matches = c_matches
-        self.p_matches = p_matches
-        self.requests_left = {c: r["on hold"] for c, r in requests.items()}
+        return MatchResult(
+            proposers=proposers,
+            recipients=recipients,
+            p_min=p_min,
+            r_min=r_min,
+        )
+
+    @staticmethod
+    def replace_current_match(
+        recipient: Candidate,
+        new_match: Candidate,
+        old_match: Candidate,
+    ) -> None:
+        """Replace the recipients"""
+        old_match.matches.discard(recipient.name)
+        recipient.matches.discard(old_match.name)
+        recipient.matches.add(new_match.name)
+        new_match.matches.add(recipient.name)
+
+    @staticmethod
+    def match(proposer: Candidate, recipient: Candidate) -> None:
+        """Add a proposer and a recipient to each other's list of matches"""
+        print(f"Matching {proposer.name} to {recipient.name}")
+        recipient.matches.add(proposer.name)
+        proposer.matches.add(recipient.name)
+
+    def get_next_valid_offer(
+        self,
+        proposer: Candidate,
+        recipients: CandidateList,
+    ) -> Optional[Candidate]:
+        """Get the next ranked recipient who has also ranked the proposer"""
+        for offer in proposer.offers_left:
+            recipient = recipients.get(offer)
+            if recipient.ranks(proposer.name):
+                return recipient
+        return None

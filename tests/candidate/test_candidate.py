@@ -3,32 +3,22 @@ import pytest
 from cohortify.candidate import Candidate, CandidateList
 
 
-@pytest.fixture(scope="function", name="alice")
-def mock_candidate():
-    """Creates a mock candidate named Alice for tests"""
-    return Candidate(
-        name="Alice",
-        prefs=["Bob", "Charlie", "Dana"],
-        capacity=1,
-    )
-
-
 class TestRankFor:
     """Tests the Candidate.rank_for() method"""
 
     def test_get_ranked_candidate(self, alice: Candidate):
         """Return the correct rank for a ranked offer"""
         # validation
-        assert alice.rank_for("Bob") == 0
+        assert alice.ranks("Bob") == 0
 
     def test_returns_none_if_unranked_without_default(self, alice: Candidate):
         """Return None if the offer is unranked and no default is set"""
         # validation
-        assert alice.rank_for("Eddie") is None
+        assert alice.ranks("Eddie") is None
 
     def test_returns_default_if_unranked_with_default(self, alice: Candidate):
         """Returns the default value if offer is unranked"""
-        assert alice.rank_for("Eddit", 99) == 99
+        assert alice.ranks("Eddit", 99) == 99
 
 
 class TestPrefers:
@@ -37,16 +27,16 @@ class TestPrefers:
     def test_prefers_new_offer(self, alice: Candidate):
         """Test return True for when new offer is preferred"""
         # setup
-        assert alice.rank_for("Bob") == 0
-        assert alice.rank_for("Charlie") == 1
+        assert alice.ranks("Bob") == 0
+        assert alice.ranks("Charlie") == 1
         # validation
         assert alice.prefers("Bob", to="Charlie") is True
 
     def test_prefers_old_offer(self, alice: Candidate):
         """Test return False for when old offer is preferred"""
         # setup
-        assert alice.rank_for("Bob") == 0
-        assert alice.rank_for("Charlie") == 1
+        assert alice.ranks("Bob") == 0
+        assert alice.ranks("Charlie") == 1
         # validation
         assert alice.prefers("Charlie", to="Bob") is False
 
@@ -55,8 +45,8 @@ class TestPrefers:
         # setup
         ranked = "Dana"
         unranked = "Eddie"
-        assert alice.rank_for(ranked) is not None
-        assert alice.rank_for(unranked) is None
+        assert alice.ranks(ranked) is not None
+        assert alice.ranks(unranked) is None
         # validation
         assert alice.prefers(ranked, to=unranked) is True
         assert alice.prefers(unranked, to=ranked) is False
@@ -66,8 +56,8 @@ class TestPrefers:
         # setup
         unranked1 = "Frank"
         unranked2 = "Eddie"
-        assert alice.rank_for(unranked1) is None
-        assert alice.rank_for(unranked2) is None
+        assert alice.ranks(unranked1) is None
+        assert alice.ranks(unranked2) is None
         # validation
         with pytest.raises(ValueError):
             alice.prefers(unranked1, to=unranked2)
