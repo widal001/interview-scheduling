@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from typing import List, Optional, Dict
 
 Name = str
@@ -16,22 +17,28 @@ class Candidate:
         self.name = name
         self.prefs = prefs
         self.capacity = capacity
-        self.rankings = {p: rank for rank, p in enumerate(prefs)}
-        self.offers_left = (offer for offer in prefs)
+        self._offers_left = (offer for offer in prefs)
         self.matches = set()
+        self._rankings = None
 
-    def rank_for(self, offer: str) -> Optional[int]:
-        return self.rankings.get(offer)
+    def rank_for(
+        self,
+        offer: str,
+        default: Optional[int] = None,
+    ) -> Optional[int]:
+        """Return candidate's ranking of a given offer, with optional default"""
+        return self.rankings.get(offer, default)
 
     def prefers(self, new: str, to: str) -> bool:
-        """Does the candidate prefer new offer to the current offer"""
-        new_rank = self.rank_for(new)
-        old_rank = self.rank_for(to)
-        if not new_rank:
-            return False
+        """Does the candidate prefer new offer to the current offer?"""
+        new_rank = self.rank_for(new, default=math.inf)
+        old_rank = self.rank_for(to, default=math.inf)
+        if new_rank == math.inf and old_rank == math.inf:
+            raise ValueError
         return old_rank > new_rank
 
     def compare_offers(self, new_offer: str) -> str:
+        """Compare new offer to existing matches return least preferred offer"""
         offer_to_reject = new_offer
         if not self.rank_for(new_offer):
             return offer_to_reject
@@ -42,20 +49,40 @@ class Candidate:
 
     @property
     def has_capacity(self) -> bool:
+        """Does this candidate have capacity for additional matches?"""
         return len(self.matches) < self.capacity
+
+    @property
+    def rankings(self) -> Dict[Name, int]:
+        """Dictionary of candidate's preference for each ranked offer"""
+        if not self._rankings:
+            self._rankings = {p: rank for rank, p in enumerate(self.prefs)}
+        return self._rankings
 
 
 class CandidateList:
+    """Dictionary of candidates keyed by their name"""
+
     def __init__(
         self,
         preferences: Preferences,
         capacities: Capacities,
         default_capacity: int,
     ) -> None:
+        """Initializes a CandidateList
 
+        Parameters
+        ----------
+        preferences: Dict[Name, List[Name]]
+            Dictionary of candidates mapped to their preferences
+        capacities: Dict[Name, int]
+            Dictionary of candidates mapped to their capacity for matches
+        default_capacity: int
+            The maximum number of matches for any candidate whose capacity was
+            not set explicitly in the capacities dictionary
+        """
         self.candidates: Dict[str, Candidate] = {}
-
-        for name, prefs in preferences:
+        for name, prefs in preferences.items():
             capacity = capacities.get(name, default_capacity)
             candidate = Candidate(name, prefs, capacity)
             self.candidates[name] = candidate
