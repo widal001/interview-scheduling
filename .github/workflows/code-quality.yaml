@@ -4,12 +4,11 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
         # checks all of the versions allowed in pyproject.toml
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.9, "3.10"]
 
     steps:
       # installs python
