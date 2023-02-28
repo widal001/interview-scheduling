@@ -6,19 +6,19 @@ name = "cohortify"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
 networkx = "^2.8.6"
 pandas = "^1.4.4"
+python = "^3.8"
 
 [tool.poetry.dev-dependencies]
-black = "^21.9b0"
+black = "^22.3.0"
 flake8 = "^3.9.2"
 liccheck = "^0.6.2"
 pre-commit = "^2.15.0"
 pylint = "^2.10.2"
 pytest = "^6.2.5"
 pytest-cov = "^2.12.1"
-safety = "^1.10.3"
+safety = "^2.3.5"
 tox = "^3.24.3"
 
 [build-system]
@@ -78,7 +78,6 @@ unauthorized_licenses = []
 [tool.pylint."MESSAGE CONTROL"]
 disable = [
   "C0114", # Disables module docstrings
-  "R0201", # Disables method could have been a function
   "R0903", # Disables too few public methods
   "C0103", # Disables invalid name
   "W0511", # Disables fixme warning  # TODO: Fix the errors below
