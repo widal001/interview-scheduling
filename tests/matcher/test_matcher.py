@@ -1,12 +1,27 @@
-from pprint import pprint
-from copy import deepcopy
+import pytest
 
-from cohortify.matcher import Matcher
-from tests.matcher.matcher_data import PREFS, INTERVIEWS
+from cohortify.matcher import Matcher, MatchResult
+from tests.matcher.matcher_data import PREFS
+
+
+@pytest.fixture(scope="function", name="matcher")
+def mock_matcher():
+    """Create a mock Matcher class for tests"""
+    p_prefs = {
+        "Alice": ["Position 1"],
+        "Bob": ["Position 2"],
+        "Charlie": ["Position 3"],
+    }
+    r_prefs = {
+        "Position 1": ["Alice"],
+        "Position 2": ["Bob"],
+        "Position 3": ["Charlie"],
+    }
+    return Matcher(proposer_prefs=p_prefs, recipient_prefs=r_prefs)
 
 
 class TestInit:
-    """Tests Matcher.init()"""
+    """Tests Matcher.__init__()"""
 
     def test_init(self):
         """Tests that Matcher instantiates correctly
@@ -14,147 +29,166 @@ class TestInit:
         Validates following conditions:
         - Matcher.c_prefs matches the input c_prefs
         - Matcher.p_prefs matches the input p_prefs
-        - Matcher.candidates contains all of the candidates
-        - Matcher.positions contains all of the positions
         """
         # setup
-        c_prefs = PREFS["complete"]["candidates"]
-        p_prefs = PREFS["complete"]["positions"]
-        candidates = ["Alice", "Bob", "Charlie"]
-        positions = ["Position 1", "Position 2", "Position 3"]
-
+        p_prefs = PREFS["complete"]["candidates"]
+        r_prefs = PREFS["complete"]["positions"]
         # execution
-        m = Matcher(c_prefs, p_prefs)
-
+        m = Matcher(p_prefs, r_prefs)
         # validation
-        assert m.c_prefs == c_prefs
-        assert m.p_prefs == p_prefs
-        assert m.candidates == candidates
-        assert m.positions == positions
+        assert m.proposer_prefs == p_prefs
+        assert m.recipient_prefs == r_prefs
+
+
+def test_match(matcher: Matcher, alice, bob):
+    """Tests the Matcher.match() static method"""
+    # setup
+    assert bob.name not in alice.matches
+    assert alice.name not in bob.matches
+    # execution
+    matcher.match(alice, bob)
+    # validation
+    assert bob.name in alice.matches
+    assert alice.name in bob.matches
+
+
+class TestReplaceCurrentMatch:
+    """Tests the Matcher.match() static method"""
+
+    def test_replace_when_already_matched(
+        self,
+        matcher: Matcher,
+        alice,
+        bob,
+        charlie,
+    ):
+        """Should successfully remove and replace old match with new match"""
+        # setup
+        alice.matches.add(charlie.name)
+        charlie.matches.add(alice.name)
+        assert charlie.name in alice.matches
+        assert alice.name in charlie.matches
+        # execution
+        matcher.replace_current_match(alice, old_match=charlie, new_match=bob)
+        # validation
+        assert bob.name in alice.matches
+        assert alice.name in bob.matches
+        assert alice.name not in charlie.matches
+
+    def test_avoid_error_if_not_already_matched(
+        self,
+        matcher: Matcher,
+        alice,
+        bob,
+        charlie,
+    ):
+        """Should not raise an error if old match isn't found in matches"""
+        # setup
+        charlie.matches.add(alice.name)
+        assert charlie.name not in alice.matches  # shouldn't cause an error
+        assert alice.name in charlie.matches
+        # execution
+        matcher.replace_current_match(alice, old_match=charlie, new_match=bob)
+        # validation
+        assert bob.name in alice.matches
+        assert alice.name in bob.matches
+        assert alice.name not in charlie.matches
 
 
 class TestAssingInterviews:
-    """Tests Matcher.assign_interviews()"""
+    """Tests Matcher.assign_matches()"""
 
-    def test_complete(self):
-        """Tests that Matcher.assign_interviews() matches all positions and
+    def test_complete(self, matcher: Matcher):
+        """Tests that Matcher.assign_matches() matches all positions and
         candidates to interviews
         """
-        # inputs
-        c_prefs = PREFS["complete"]["candidates"]
-        p_prefs = PREFS["complete"]["positions"]
-        c_matches = INTERVIEWS["complete"]["candidates"]
-        p_matches = INTERVIEWS["complete"]["positions"]
-
+        # setup
+        expected = [
+            ("Alice", "Position 1"),
+            ("Bob", "Position 2"),
+            ("Charlie", "Position 3"),
+        ]
         # execution
-        m = Matcher(c_prefs, p_prefs)
-        m.assign_interviews(c_min=1, c_max=3, p_min=1, p_max=3)
-
-        print("EXPECTED")
-        pprint(c_matches)
-        print("ACTUAL")
-        pprint(m.c_matches)
-        print("EXPECTED")
-        pprint(p_matches)
-        print("ACTUAL")
-        pprint(m.p_matches)
-
+        result = matcher.assign_matches(p_capacity=1, r_capacity=1)
+        alice = result.proposers.get("Alice")
+        print(alice.matches)
         # validation
-        assert m.c_matches == c_matches
-        assert m.p_matches == p_matches
-        assert m.c_remaining == []
-        assert m.p_remaining == []
+        assert isinstance(result, MatchResult)
+        assert result.matches == expected
 
-    def test_unmatched_candidate(self):
+    def test_unmatched_candidate(self, matcher: Matcher):
         """Tests that the correct set of candidates are listed as unmatched if
         they can't be matched to interviews based on their preferences
         """
-        # inputs
-        c_prefs = deepcopy(PREFS["complete"]["candidates"])
-        p_prefs = deepcopy(PREFS["complete"]["positions"])
-        c_matches = deepcopy(INTERVIEWS["complete"]["candidates"])
-        p_matches = deepcopy(INTERVIEWS["complete"]["positions"])
-        c_prefs["Dana"] = {"Position 1": 1, "Position 2": 2, "Position 3": 3}
-        c_matches["Dana"] = []
-
+        # setup
+        matcher.recipient_prefs["Position 3"] = ["Alice"]
         # execution
-        m = Matcher(c_prefs, p_prefs)
-        m.assign_interviews(c_min=1, c_max=3, p_min=1, p_max=3)
-
-        print("EXPECTED")
-        pprint(c_matches)
-        print("ACTUAL")
-        pprint(m.c_matches)
-        print("EXPECTED")
-        pprint(p_matches)
-        print("ACTUAL")
-        pprint(m.p_matches)
-
+        result = matcher.assign_matches(p_capacity=1, r_capacity=1, p_min=1)
+        charlie = result.proposers.get("Charlie")
+        position3 = result.recipients.get("Position 3")
+        remaining = result.get_remaining(kind="proposers")
+        print(charlie.matches)
+        print(remaining)
         # validation
-        assert m.c_matches == c_matches
-        assert m.p_matches == p_matches
-        assert m.c_remaining == ["Dana"]
-        assert m.p_remaining == []
+        assert charlie.matches == set()
+        assert position3.matches == set()
+        assert len(remaining) == 1
+        assert remaining == [charlie]
 
-    def test_unmatched_position(self):
+    def test_unmatched_position(self, matcher: Matcher):
         """Tests that the correct set of positions are listed as unmatched if
         they can't be matched to interviews based on their preferences
         """
-        # inputs
-        c_prefs = deepcopy(PREFS["complete"]["candidates"])
-        p_prefs = deepcopy(PREFS["complete"]["positions"])
-        c_matches = deepcopy(INTERVIEWS["complete"]["candidates"])
-        p_matches = deepcopy(INTERVIEWS["complete"]["positions"])
-        p_prefs["Position 4"] = {"Alice": 1, "Bob": 2, "Charlie": 3}
-        p_matches["Position 4"] = []
-
+        # setup
+        matcher.proposer_prefs["Alice"] = ["Position 2"]
         # execution
-        m = Matcher(c_prefs, p_prefs)
-        m.assign_interviews(c_min=1, c_max=3, p_min=1, p_max=3)
-
-        print("EXPECTED")
-        pprint(c_matches)
-        print("ACTUAL")
-        pprint(m.c_matches)
-        print("EXPECTED")
-        pprint(p_matches)
-        print("ACTUAL")
-        pprint(m.p_matches)
-
+        result = matcher.assign_matches(p_capacity=1, r_capacity=1, r_min=1)
+        position1 = result.recipients.get("Position 1")
+        alice = result.proposers.get("Alice")
+        remaining = result.get_remaining(kind="recipients")
+        print(position1.matches)
+        print(alice.matches)
+        print(remaining)
         # validation
-        assert m.c_matches == c_matches
-        assert m.p_matches == p_matches
-        assert m.c_remaining == []
-        assert m.p_remaining == ["Position 4"]
+        assert position1.matches == set()
+        assert alice.matches == set()
+        assert len(remaining) == 1
+        assert remaining == [position1]
 
-    def test_match_swapping(self):
-        """Tests that the correct interviews are assigned when a position
-        receives an interview from a more preferred candidate after it has
-        already reached its max number of interviews.
-        """
-        # inputs
-        c_prefs = deepcopy(PREFS["match swapping"]["candidates"])
-        p_prefs = deepcopy(PREFS["match swapping"]["positions"])
-        c_matches = deepcopy(INTERVIEWS["match swapping"]["candidates"])
-        p_matches = deepcopy(INTERVIEWS["match swapping"]["positions"])
-
+    def test_two_matches_for_a_position(self, matcher: Matcher):
+        """Assign multiple candidates to a position if the position has capacity"""
+        # setup
+        matcher.proposer_prefs["Bob"] = ["Position 1"]
+        matcher.recipient_prefs["Position 1"] = ["Alice", "Bob"]
         # execution
-        m = Matcher(c_prefs, p_prefs)
-        m.assign_interviews(c_min=1, c_max=2, p_min=1, p_max=2)
-
-        print("EXPECTED")
-        pprint(c_matches)
-        print("ACTUAL")
-        pprint(m.c_matches)
-        print("EXPECTED")
-        pprint(p_matches)
-        print("ACTUAL")
-        pprint(m.p_matches)
-        print("REQUESTS")
-        pprint(m.requests_left)
-
+        result = matcher.assign_matches(p_capacity=1, r_capacity=2)
+        position1 = result.recipients.get("Position 1")
+        alice = result.proposers.get("Alice")
+        bob = result.proposers.get("Bob")
+        print(position1.matches)
+        print(alice.matches)
+        print(bob.matches)
         # validation
-        assert m.c_matches == c_matches
-        assert m.p_matches == p_matches
-        assert m.c_remaining == []
-        assert m.p_remaining == []
+        assert position1.capacity == 2
+        assert position1.matches == {alice.name, bob.name}
+        assert alice.matches == {position1.name}
+        assert bob.matches == {position1.name}
+
+    def test_candidate_matched_to_second_choice(self, matcher: Matcher):
+        """Candidate matched to second choice after being rejeceted from first"""
+        # setup
+        matcher.proposer_prefs["Alice"] = ["Position 1", "Position 2"]
+        matcher.proposer_prefs["Bob"] = ["Position 1"]
+        matcher.recipient_prefs["Position 1"] = ["Bob", "Alice"]
+        matcher.recipient_prefs["Position 2"] = ["Alice", "Bob"]
+        # execution
+        result = matcher.assign_matches(p_capacity=1, r_capacity=1)
+        position1 = result.recipients.get("Position 1")
+        position2 = result.recipients.get("Position 2")
+        alice = result.proposers.get("Alice")
+        bob = result.proposers.get("Bob")
+        # validation
+        assert position1.matches == {bob.name}
+        assert position2.matches == {alice.name}
+        assert alice.matches == {position2.name}
+        assert bob.matches == {position1.name}

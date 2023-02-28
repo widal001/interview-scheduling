@@ -94,7 +94,7 @@ class Scheduler:
             for time, flow in flow_dict[(i, "p")].items():
                 if flow > 0:
                     scheduled[i] = time[1]
-        unscheduled = [i for i in interviews if i not in scheduled.keys()]
+        unscheduled = [i for i in interviews if i not in scheduled]
 
         self.G = G
         self.scheduled = scheduled
