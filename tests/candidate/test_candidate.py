@@ -3,13 +3,13 @@ import pytest
 from cohortify.candidate import Candidate, CandidateList
 
 
-class TestRankFor:
-    """Tests the Candidate.rank_for() method"""
+class TestRanks:
+    """Tests the Candidate.ranks() method"""
 
     def test_get_ranked_candidate(self, alice: Candidate):
         """Return the correct rank for a ranked offer"""
         # validation
-        assert alice.ranks("Bob") == 0
+        assert alice.ranks("Bob") == 1  # should be index + 1
 
     def test_returns_none_if_unranked_without_default(self, alice: Candidate):
         """Return None if the offer is unranked and no default is set"""
@@ -18,7 +18,7 @@ class TestRankFor:
 
     def test_returns_default_if_unranked_with_default(self, alice: Candidate):
         """Returns the default value if offer is unranked"""
-        assert alice.ranks("Eddit", 99) == 99
+        assert alice.ranks("Fake Person", default=99) == 99
 
 
 class TestPrefers:
@@ -27,16 +27,16 @@ class TestPrefers:
     def test_prefers_new_offer(self, alice: Candidate):
         """Test return True for when new offer is preferred"""
         # setup
-        assert alice.ranks("Bob") == 0
-        assert alice.ranks("Charlie") == 1
+        assert alice.ranks("Bob") == 1
+        assert alice.ranks("Charlie") == 2
         # validation
         assert alice.prefers("Bob", to="Charlie") is True
 
     def test_prefers_old_offer(self, alice: Candidate):
         """Test return False for when old offer is preferred"""
         # setup
-        assert alice.ranks("Bob") == 0
-        assert alice.ranks("Charlie") == 1
+        assert alice.ranks("Bob") == 1
+        assert alice.ranks("Charlie") == 2
         # validation
         assert alice.prefers("Charlie", to="Bob") is False
 
