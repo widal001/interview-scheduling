@@ -1,10 +1,7 @@
-from pprint import pprint
-from copy import deepcopy
-
 import pytest
 
 from cohortify.matcher import Matcher, MatchResult
-from tests.matcher.matcher_data import PREFS, INTERVIEWS
+from tests.matcher.matcher_data import PREFS
 
 
 @pytest.fixture(scope="function", name="matcher")
@@ -72,7 +69,7 @@ class TestReplaceCurrentMatch:
         assert charlie.name in alice.matches
         assert alice.name in charlie.matches
         # execution
-        matcher.replace_current_match(alice, bob, charlie)
+        matcher.replace_current_match(alice, old_match=charlie, new_match=bob)
         # validation
         assert bob.name in alice.matches
         assert alice.name in bob.matches
@@ -91,7 +88,7 @@ class TestReplaceCurrentMatch:
         assert charlie.name not in alice.matches  # shouldn't cause an error
         assert alice.name in charlie.matches
         # execution
-        matcher.replace_current_match(alice, bob, charlie)
+        matcher.replace_current_match(alice, old_match=charlie, new_match=bob)
         # validation
         assert bob.name in alice.matches
         assert alice.name in bob.matches

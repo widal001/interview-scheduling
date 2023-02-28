@@ -3,17 +3,32 @@ import math
 from typing import List, Optional, Dict, Tuple
 
 Name = str
+Offer = str
 Preferences = Dict[Name, List[Name]]
 Capacities = Dict[Name, int]
 
 
 class Candidate:
+    """Represents a candidate in a matching market"""
+
     def __init__(
         self,
         name: Name,
-        prefs: List[Name],
+        prefs: List[Offer],
         capacity: int,
     ) -> None:
+        """Initializes the Candidate candidate class
+
+        Parameters
+        ----------
+        name: str
+            The name of the candidate
+        prefs: List[str]
+            A list of offers, ranked according to the candidate's preference,
+            with an index of 0 representing the most preferred offer
+        capacity: int
+            The maximum number of offers a candidate can accept
+        """
         self.name = name
         self.prefs = prefs
         self.capacity = capacity
@@ -92,12 +107,15 @@ class CandidateList:
             self.candidates[name] = candidate
 
     def get(self, name: str) -> Candidate:
+        """Retrieve the candidate by their name"""
         if name not in self.candidates:
             raise KeyError
         return self.candidates.get(name)
 
     def items(self) -> List[Tuple[Name, Candidate]]:
+        """Return the candidates as a list of tuples to iterate over"""
         return self.candidates.items()
 
     def to_list(self) -> List[Name]:
+        """Return the candidates as a list"""
         return list(self.candidates.keys())
