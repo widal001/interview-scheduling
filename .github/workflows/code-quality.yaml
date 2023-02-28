@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # installs poetry
-      - uses: Gr1N/setup-poetry@v4
-      - name: Install dependencies
+      - uses: Gr1N/setup-poetry@v8
+      - name: Setup Poetry
         run: |
           poetry install
       - name: Run tox
