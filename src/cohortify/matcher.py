@@ -2,6 +2,7 @@ from __future__ import annotations  # prevents NameErrors for typing
 from typing import Dict, List, Tuple, Optional, Union
 
 from cohortify.candidate import Candidate, CandidateList
+from cohortify.logger import Logger
 
 Member = str
 Preferences = Dict[Member, List[Member]]
@@ -90,6 +91,7 @@ class Matcher:
         """
         self.proposer_prefs = proposer_prefs
         self.recipient_prefs = recipient_prefs
+        self.log = Logger()
 
     def assign_matches(
         self,
@@ -143,28 +145,40 @@ class Matcher:
             # get the next proposer with an offer to make
             proposer = proposers.get(proposers_left.pop(0))
             recipient = self.get_next_valid_offer(proposer, recipients)
+            self.log.init_round(offer_round, proposer, recipient)
+
             if not recipient:
+                self.log.no_offers_left()
                 continue
 
             if recipient.has_capacity:
+                self.log.has_capacity(kind="recipient")
                 self.match(proposer, recipient)
             else:
+                self.log.exceeds_capacity(kind="recipient")
                 # if the recipient prefers this offer to their current matches
                 # replace the lowest ranked match with the new proposer
                 rejected = recipient.compare_offers(proposer.name)
                 if proposer.name != rejected:
                     rejected = proposers.get(rejected)
+                    self.log.new_offer_accepted(old_offer=rejected)
                     self.replace_current_match(
                         recipient=recipient,
                         old_match=rejected,
                         new_match=proposer,
                     )
                     if rejected.has_offers:
+                        self.log.has_offers_left(candidate=rejected)
                         proposers_left.append(rejected.name)
+                else:
+                    self.log.new_offer_rejected()
 
             # if they have capacity, add the proposer back to the pool
             if proposer.has_capacity:
+                self.log.has_capacity(kind="proposer")
                 proposers_left.append(proposer)
+            else:
+                self.log.exceeds_capacity(kind="proposer")
 
         return MatchResult(
             proposers=proposers,
