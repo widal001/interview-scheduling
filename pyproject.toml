@@ -9,6 +9,7 @@ version = "0.1.0"
 networkx = "^2.8.6"
 pandas = "^1.4.4"
 python = "^3.8"
+loguru = "^0.7.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
