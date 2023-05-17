@@ -1,6 +1,7 @@
 import pytest
 
 from cohortify.matcher import Matcher, MatchResult
+from cohortify.logger import LogEntry
 from tests.matcher.matcher_data import PREFS
 
 
@@ -134,6 +135,7 @@ class TestAssingInterviews:
         assert position3.matches == set()
         assert len(remaining) == 1
         assert remaining == [charlie]
+        assert isinstance(result.match_logs[0], LogEntry)
 
     def test_unmatched_position(self, matcher: Matcher):
         """Tests that the correct set of positions are listed as unmatched if

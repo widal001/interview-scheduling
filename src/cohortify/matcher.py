@@ -2,7 +2,7 @@ from __future__ import annotations  # prevents NameErrors for typing
 from typing import Dict, List, Tuple, Optional, Union
 
 from cohortify.candidate import Candidate, CandidateList
-from cohortify.logger import Logger
+from cohortify.logger import Logger, LogEntry
 
 Member = str
 Preferences = Dict[Member, List[Member]]
@@ -17,6 +17,7 @@ class MatchResult:
         self,
         proposers: CandidateList,
         recipients: CandidateList,
+        match_logs: list[LogEntry],
         p_min: int = 0,
         r_min: int = 0,
     ) -> None:
@@ -35,6 +36,7 @@ class MatchResult:
         """
         self.proposers = proposers
         self.recipients = recipients
+        self.match_logs = match_logs
         self.p_min = p_min
         self.r_min = r_min
 
@@ -183,6 +185,7 @@ class Matcher:
         return MatchResult(
             proposers=proposers,
             recipients=recipients,
+            match_logs=self.log.logs,
             p_min=p_min,
             r_min=r_min,
         )
