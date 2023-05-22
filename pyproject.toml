@@ -6,6 +6,7 @@ name = "cohortify"
 version = "0.1.0"
 
 [tool.poetry.dependencies]
+loguru = "^0.7.0"
 networkx = "^2.8.6"
 pandas = "^1.4.4"
 python = "^3.8"
@@ -84,4 +85,5 @@ disable = [
   "W0511", # Disables fixme warning  # TODO: Fix the errors below
   "R0914", # Disables too many local variables
   "R0902", # Disables too many instance attributes
+  "R0913", # Disables too many arguments
 ]
