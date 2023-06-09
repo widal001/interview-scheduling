@@ -78,6 +78,9 @@ class Candidate:
             self._rankings = {p: rank + 1 for rank, p in enumerate(self.prefs)}
         return self._rankings
 
+    def __repr__(self) -> str:
+        return f"Candidate: {self.name}"
+
 
 class CandidateList:
     """Dictionary of candidates keyed by their name"""
@@ -106,10 +109,8 @@ class CandidateList:
             candidate = Candidate(name, prefs, capacity)
             self.candidates[name] = candidate
 
-    def get(self, name: str) -> Candidate:
+    def get(self, name: str) -> Optional[Candidate]:
         """Retrieve the candidate by their name"""
-        if name not in self.candidates:
-            raise KeyError
         return self.candidates.get(name)
 
     def items(self) -> List[Tuple[Name, Candidate]]:

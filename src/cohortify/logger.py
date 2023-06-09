@@ -11,14 +11,16 @@ class LogType(Enum):
     """List of log types supported by Logger class"""
 
     init_round = "New Offer Round Started"
-    has_capacity_proposer = "Proposer Has Capacity"
-    has_capacity_recipient = "Recipient Has Capacity"
-    exceeds_capacity_proposer = "Proposer Exceeds Capacity"
-    exceeds_capacity_recipient = "Proposer Exceeds Capacity"
-    has_offers = "Proposer Has Offers Left"
+    has_capacity_proposer = "Proposer Returned to Pool"
+    has_capacity_recipient = "Recipient Accepts Offer"
+    exceeds_capacity_proposer = "Proposer Not Returned to Pool"
+    exceeds_capacity_recipient = "Recipient Compares Offers"
+    has_offers = "Proposer Returned to Pool"
     no_offers = "Proposer Has No Offers Left"
-    accepts_offer = "Recipient Accents New Offer"
-    rejects_offer = "Recipient Rejects New Offer"
+    accepts_offer = "Recipient Swaps Offers"
+    rejects_offer = "Recipient Rejects Offer"
+    recipient_not_found = "Recipient Not Found"
+    proposer_not_ranked = "Proposer Not Ranked"
 
 
 @dataclass
@@ -93,14 +95,16 @@ class Logger:
         """Record that a proposer or recipient has capacity for new matches"""
         if kind == "proposer":
             message = (
-                f"{self.proposer} still has capacity for additional matches and "
-                "will be returned to the pool of proposers."
+                f"{self.proposer} has room for {self._proposer.capacity} "
+                f"matches, but only has {len(self._proposer.matches)} matches "
+                "currently. As a result, they will be returned to the pool."
             )
             self.record_log(message, LogType.has_capacity_proposer)
         else:
             message = (
-                f"{self.recipient} has capacity for additional matches, "
-                f"and will accept the offer from {self.proposer}."
+                f"{self.recipient} has room for {self._recipient.capacity} matches "
+                f"but only has {len(self._recipient.matches)} matches currently. "
+                f"As a result they will accept the offer from {self.proposer}."
             )
             self.record_log(message, LogType.has_capacity_recipient)
 
@@ -123,23 +127,29 @@ class Logger:
     def has_offers_left(self, candidate: Candidate) -> None:
         """Record that a proposer still has offers to make to recipients"""
         message = (
-            f"{candidate.name} still has no offers left to make and will be "
+            f"{candidate.name} still has offers left to make and will be "
             "returned to the proposer pool."
         )
         self.record_log(
             message=message,
             log_type=LogType.has_offers,
-            proposer=candidate,
+            proposer=candidate.name,
             recipient="N/A",
         )
 
-    def no_offers_left(self):
+    def no_offers_left(self, offer_round: int, proposer: Candidate):
         """Record that a proposer does not have any remaining offers to make"""
         message = (
-            f"{self.proposer} does not have any offers left to make "
+            f"{proposer.name} does not have any offers left to make "
             "and will not be returned to the pool of proposers."
         )
-        self.record_log(message, LogType.no_offers, recipient="N/A")
+        self.record_log(
+            message,
+            LogType.no_offers,
+            offer_round=offer_round,
+            proposer=proposer.name,
+            recipient="N/A",
+        )
 
     def new_offer_rejected(self):
         """Record that the recipient accepted an offer from the current proposer"""
@@ -158,16 +168,55 @@ class Logger:
         )
         self.record_log(message, LogType.accepts_offer)
 
+    def recipient_not_found(
+        self,
+        offer_round: int,
+        proposer: Candidate,
+        recipient: str,
+    ) -> None:
+        """Record that the recipient wasn't found in the list of recipients"""
+        message = (
+            f"{proposer.name} ranked {recipient}, but {recipient} wasn't "
+            "found in the list of recipients."
+        )
+        self.record_log(
+            message=message,
+            log_type=LogType.recipient_not_found,
+            offer_round=offer_round,
+            proposer=proposer.name,
+            recipient=recipient,
+        )
+
+    def proposer_not_ranked(
+        self,
+        offer_round: int,
+        proposer: Candidate,
+        recipient: Candidate,
+    ) -> None:
+        """Record that the recipient didn't rank the proposer"""
+        message = (
+            f"{proposer.name} ranked {recipient.name}, but {recipient.name} "
+            f"did not rank {proposer.name} in return."
+        )
+        self.record_log(
+            message=message,
+            log_type=LogType.recipient_not_found,
+            offer_round=offer_round,
+            proposer=proposer.name,
+            recipient=recipient.name,
+        )
+
     def record_log(
         self,
         message: str,
         log_type: LogType,
+        offer_round: int = None,
         proposer: str = None,
         recipient: str = None,
     ) -> None:
         """Record a new log to std error and to the logs list"""
         entry = LogEntry(
-            offer_round=self.offer_round,
+            offer_round=offer_round or self.offer_round,
             proposer=proposer or self.proposer,
             recipient=recipient or self.recipient,
             log_type=log_type.value,

@@ -144,13 +144,21 @@ class Matcher:
         while proposers_left:
             offer_round += 1
 
+            print(f"Round: {offer_round}")
+            for name in proposers_left:
+                print(f"Proposer: {name}")
+
             # get the next proposer with an offer to make
             proposer = proposers.get(proposers_left.pop(0))
-            recipient = self.get_next_valid_offer(proposer, recipients)
-            self.log.init_round(offer_round, proposer, recipient)
+            print(f"New proposer: {proposer.name}")
+            recipient = self.get_next_valid_offer(
+                offer_round=offer_round,
+                proposer=proposer,
+                recipients=recipients,
+            )
 
             if not recipient:
-                self.log.no_offers_left()
+                self.log.no_offers_left(offer_round, proposer)
                 continue
 
             if recipient.has_capacity:
@@ -169,16 +177,19 @@ class Matcher:
                         old_match=rejected,
                         new_match=proposer,
                     )
-                    if rejected.has_offers:
+                    if (
+                        rejected.has_offers
+                        and rejected.name not in proposers_left
+                    ):
                         self.log.has_offers_left(candidate=rejected)
                         proposers_left.append(rejected.name)
                 else:
                     self.log.new_offer_rejected()
 
             # if they have capacity, add the proposer back to the pool
-            if proposer.has_capacity:
+            if proposer.has_capacity and proposer.name not in proposers_left:
                 self.log.has_capacity(kind="proposer")
-                proposers_left.append(proposer)
+                proposers_left.append(proposer.name)
             else:
                 self.log.exceeds_capacity(kind="proposer")
 
@@ -214,12 +225,18 @@ class Matcher:
 
     def get_next_valid_offer(
         self,
+        offer_round: int,
         proposer: Candidate,
         recipients: CandidateList,
     ) -> Optional[Candidate]:
         """Get the next preferred recipient who has also ranked the proposer"""
         for offer in proposer.offers_left:
             recipient = recipients.get(offer)
+            if not recipient:
+                self.log.recipient_not_found(offer_round, proposer, offer)
+                continue
             if recipient.ranks(proposer.name):
+                self.log.init_round(offer_round, proposer, recipient)
                 return recipient
+            self.log.proposer_not_ranked(offer_round, proposer, recipient)
         return None
