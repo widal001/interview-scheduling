@@ -89,10 +89,13 @@ def test_accepts_offer(logger: Logger, charlie: Candidate) -> None:
     assert last_log.log_type == LogType.accepts_offer.value
 
 
-def test_no_offers(logger: Logger) -> None:
+def test_no_offers(logger: Logger, charlie: Candidate) -> None:
     """Tests that logger.no_offers_left() records the correct log type"""
     # setup
-    logger.no_offers_left()
+    logger.no_offers_left(
+        offer_round=OFFER_ROUND,
+        proposer=charlie,
+    )
     # validation
     last_log = logger.logs[-1]
     assert last_log.log_type == LogType.no_offers.value

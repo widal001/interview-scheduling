@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from loguru import logger
+# from loguru import logger
 
 from cohortify.candidate import Candidate
 
@@ -223,4 +223,4 @@ class Logger:
             message=message,
         )
         self.logs.append(entry)
-        logger.info(entry)
+        # logger.info(entry)
