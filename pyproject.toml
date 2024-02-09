@@ -10,7 +10,7 @@ loguru = "^0.7.0"
 networkx = "^2.8.6"
 pandas = "^2.0.1"
 python = "^3.8"
-notebook = "^6.5.4"
+notebook = "^7.0.7"
 openpyxl = "^3.1.2"
 
 [tool.poetry.dev-dependencies]
